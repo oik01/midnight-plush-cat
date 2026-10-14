@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Midnight — Plush Black Cat · Material Study No. 013</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%23ff9a55'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      --ink: #fbeee2;
+      --soft: #ead8ce;
+      --muted: #a9939f;
+      --hairline: rgba(255, 222, 196, 0.12);
+      --accent-start: #ff9a55;
+      --accent-end: #f07a45;
+      --secondary: #ffc27a;
+      --bg: #120a18;
+      --glass-bg: rgba(22, 13, 30, 0.72);
+      --glass-bg-strong: rgba(26, 15, 35, 0.86);
+      --glass-highlight: inset 0 1px 0 rgba(255, 232, 212, 0.16);
+      --glass-shadow: 0 24px 56px rgba(5, 2, 10, 0.68), 0 4px 16px rgba(0, 0, 0, 0.45);
+      --font-serif: 'Fraunces', Georgia, serif;
+      --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      display: block;
+    }
+
+    #plush-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: auto;
+      touch-action: none;
+      display: block;
+      cursor: grab;
+    }
+
+    #plush-canvas:active {
+      cursor: grabbing;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 52% 52%, rgba(18, 10, 24, 0) 42%, rgba(12, 6, 18, 0.45) 78%, rgba(8, 3, 13, 0.82) 100%),
+        linear-gradient(90deg, rgba(14, 7, 20, 0.68) 0%, rgba(14, 7, 20, 0.34) 26%, rgba(14, 7, 20, 0) 48%),
+        linear-gradient(180deg, rgba(12, 6, 18, 0.42) 0%, rgba(12, 6, 18, 0) 14%, rgba(12, 6, 18, 0) 84%, rgba(10, 5, 15, 0.65) 100%);
+    }
+
+    /* Focus rings */
+    button:focus-visible,
+    input:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--secondary);
+      outline-offset: 2px;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      pointer-events: none;
+    }
+
+    .top-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--soft);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .top-kicker svg {
+      width: 15px;
+      height: 15px;
+      color: var(--secondary);
+      filter: drop-shadow(0 0 6px rgba(255, 154, 85, 0.75));
+      flex-shrink: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: rgba(22, 13, 30, 0.72);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--glass-highlight), 0 8px 20px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--soft);
+      white-space: nowrap;
+      flex-shrink: 0;
+      pointer-events: auto;
+    }
+
+    .ember-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe3b3, #ff9a55 60%, #e05a2b 100%);
+      box-shadow: 0 0 8px #ff9a55, 0 0 14px rgba(240, 122, 69, 0.7);
+      animation: emberPulse 2.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes emberPulse {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.24); opacity: 0.65; }
+    }
+
+    /* Left Masthead */
+    #masthead {
+      position: fixed;
+      top: 64px;
+      left: 28px;
+      z-index: 8;
+      max-width: 430px;
+      pointer-events: none;
+    }
+
+    .masthead-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(56px, 6.8vw, 100px);
+      line-height: 0.9;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      text-shadow:
+        0 8px 34px rgba(255, 154, 85, 0.22),
+        0 2px 16px rgba(8, 3, 14, 0.85);
+      margin-bottom: 16px;
+    }
+
+    .masthead-title .line-1 {
+      display: block;
+    }
+
+    .masthead-title .line-2 {
+      display: block;
+      padding-left: 0.42em;
+      color: #fff3e6;
+    }
+
+    .masthead-caption {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.52;
+      color: var(--soft);
+      max-width: 365px;
+      text-shadow: 0 2px 10px rgba(8, 3, 14, 0.9);
+      margin-bottom: 14px;
+    }
+
+    .masthead-motto {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 13.5px;
+      line-height: 1.48;
+      color: var(--secondary);
+      border-left: 2px solid rgba(255, 154, 85, 0.55);
+      padding-left: 12px;
+      margin-bottom: 14px;
+      max-width: 350px;
+      text-shadow: 0 2px 10px rgba(8, 3, 14, 0.95);
+    }
+
+    .specimen-id {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-shadow: 0 1px 8px rgba(8, 3, 14, 0.95);
+    }
+
+    /* Right Control Panel */
+    #control-panel {
+      position: fixed;
+      top: 64px;
+      right: 24px;
+      z-index: 10;
+      width: 316px;
+      max-height: calc(100vh - 96px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--hairline);
+      border-radius: 24px;
+      box-shadow: var(--glass-highlight), var(--glass-shadow);
+      padding: 18px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      pointer-events: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 222, 196, 0.2) transparent;
+    }
+
+    #control-panel::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #control-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 222, 196, 0.2);
+      border-radius: 999px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--hairline);
+    }
+
+    .panel-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .panel-subtitle {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .panel-section {
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .section-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* TOUCH Segmented Control */
+    .segmented-control {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      background: rgba(12, 6, 18, 0.55);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 222, 196, 0.08);
+    }
+
+    .tool-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--soft);
+      border-radius: 10px;
+      padding: 7px 6px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tool-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .tool-btn:hover {
+      color: var(--ink);
+      background: rgba(255, 222, 196, 0.06);
+    }
+
+    .tool-btn[aria-pressed="true"],
+    .tool-btn.is-active,
+    .tool-btn.active {
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+      color: #1c0d18;
+      font-weight: 700;
+      box-shadow:
+        0 4px 14px rgba(240, 122, 69, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    /* COAT Swatches */
+    .coat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .coat-btn {
+      appearance: none;
+      background: rgba(15, 8, 22, 0.48);
+      border: 1px solid rgba(255, 222, 196, 0.1);
+      border-radius: 12px;
+      padding: 7px 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--soft);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .coat-btn:hover {
+      border-color: rgba(255, 194, 122, 0.32);
+      color: var(--ink);
+    }
+
+    .coat-orb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .coat-orb--midnight {
+      background: radial-gradient(circle at 32% 28%, #47395c 0%, #1c1526 52%, #09060d 100%);
+    }
+
+    .coat-orb--smoke {
+      background: radial-gradient(circle at 32% 28%, #9b8fa8 0%, #483f54 55%, #1d1824 100%);
+    }
+
+    .coat-orb--tuxedo {
+      background: radial-gradient(circle at 65% 68%, #f7e6d4 0%, #f0d7be 32%, #241c2e 36%, #0a070f 100%);
+    }
+
+    .coat-btn[aria-pressed="true"],
+    .coat-btn.is-active,
+    .coat-btn.active {
+      border-color: var(--secondary);
+      background: rgba(255, 154, 85, 0.13);
+      color: var(--ink);
+      box-shadow: 0 0 14px rgba(255, 154, 85, 0.22);
+    }
+
+    .coat-btn[aria-pressed="true"] .coat-orb,
+    .coat-btn.is-active .coat-orb,
+    .coat-btn.active .coat-orb {
+      box-shadow: 0 0 0 2px var(--secondary), 0 0 10px rgba(255, 154, 85, 0.65);
+    }
+
+    /* Sliders */
+    .sliders-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .slider-name {
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 11.5px;
+    }
+
+    .slider-poles {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .plush-slider {
+      --val: 50%;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        var(--accent-start) 0%,
+        var(--accent-end) var(--val),
+        rgba(255, 222, 196, 0.14) var(--val),
+        rgba(255, 222, 196, 0.14) 100%
+      );
+      outline: none;
+      cursor: pointer;
+    }
+
+    .plush-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff6eb, var(--secondary) 65%, var(--accent-end) 100%);
+      border: 1.5px solid #231126;
+      box-shadow: 0 0 10px rgba(255, 154, 85, 0.75), 0 2px 5px rgba(0, 0, 0, 0.5);
+      cursor: grab;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .plush-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 14px rgba(255, 194, 122, 0.95);
+    }
+
+    .plush-slider::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff6eb, var(--secondary) 65%, var(--accent-end) 100%);
+      border: 1.5px solid #231126;
+      box-shadow: 0 0 10px rgba(255, 154, 85, 0.75), 0 2px 5px rgba(0, 0, 0, 0.5);
+      cursor: grab;
+    }
+
+    /* ACTIONS 2-Column Grid */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .action-btn {
+      appearance: none;
+      background: rgba(15, 8, 22, 0.52);
+      border: 1px solid rgba(255, 222, 196, 0.1);
+      border-radius: 11px;
+      padding: 7px 9px;
+      color: var(--soft);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .action-btn-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--secondary);
+      stroke-width: 1.75;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .action-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .shortcut-badge {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      background: rgba(255, 222, 196, 0.07);
+      border-radius: 5px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 154, 85, 0.11);
+      border-color: rgba(255, 194, 122, 0.3);
+      color: var(--ink);
+    }
+
+    .action-btn:hover svg {
+      transform: scale(1.1);
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+
+    .action-btn[aria-pressed="true"],
+    .action-btn.is-active,
+    .action-btn.active {
+      background: linear-gradient(135deg, rgba(255, 154, 85, 0.28), rgba(240, 122, 69, 0.22));
+      border-color: var(--accent-start);
+      color: var(--ink);
+      box-shadow: 0 0 14px rgba(255, 154, 85, 0.25), inset 0 1px 0 rgba(255, 230, 200, 0.22);
+    }
+
+    .action-btn[aria-pressed="true"] .shortcut-badge,
+    .action-btn.is-active .shortcut-badge,
+    .action-btn.active .shortcut-badge {
+      background: rgba(255, 154, 85, 0.28);
+      color: var(--ink);
+    }
+
+    /* Utility & Checkboxes Row */
+    .utility-section {
+      padding: 11px 0 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .utility-row {
+      display: grid;
+      grid-template-columns: 1.25fr 0.9fr 0.9fr;
+      gap: 6px;
+    }
+
+    .util-btn {
+      appearance: none;
+      background: rgba(255, 222, 196, 0.06);
+      border: 1px solid rgba(255, 222, 196, 0.12);
+      border-radius: 9px;
+      padding: 6px 8px;
+      color: var(--soft);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .util-btn:hover {
+      background: rgba(255, 222, 196, 0.13);
+      color: var(--ink);
+    }
+
+    .util-btn[aria-pressed="true"],
+    .util-btn.is-active,
+    .util-btn.active {
+      background: rgba(255, 154, 85, 0.22);
+      border-color: var(--accent-start);
+      color: var(--secondary);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .chk-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      color: var(--soft);
+      cursor: pointer;
+    }
+
+    .chk-input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 222, 196, 0.26);
+      background: rgba(12, 6, 18, 0.65);
+      display: inline-grid;
+      place-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chk-input::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      transform: scale(0);
+      transition: transform 0.12s ease-in-out;
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+      box-shadow: 0 0 6px rgba(255, 154, 85, 0.8);
+    }
+
+    .chk-input:checked,
+    .chk-input[aria-checked="true"] {
+      border-color: var(--secondary);
+    }
+
+    .chk-input:checked::before,
+    .chk-input[aria-checked="true"]::before {
+      transform: scale(1);
+    }
+
+    .panel-note {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 11.5px;
+      line-height: 1.42;
+      color: var(--muted);
+      padding-top: 6px;
+      border-top: 1px dashed var(--hairline);
+    }
+
+    /* Speech Bubble */
+    #speech-bubble {
+      position: fixed;
+      left: 50%;
+      bottom: 42px;
+      transform: translateX(-50%);
+      z-index: 9;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: var(--glass-bg-strong);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 222, 196, 0.18);
+      box-shadow: var(--glass-highlight), 0 14px 34px rgba(5, 2, 10, 0.65);
+      pointer-events: none;
+      max-width: min(520px, 86vw);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .speech-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--secondary), var(--accent-end));
+      box-shadow: 0 0 10px var(--accent-start);
+      flex-shrink: 0;
+    }
+
+    #speech-text {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 14.5px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @keyframes speechPop {
+      0% { transform: translateX(-50%) scale(0.92); }
+      45% { transform: translateX(-50%) scale(1.04); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    @keyframes speechTextPop {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.03); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #speech-bubble.pop-anim {
+      animation: speechPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #speech-text.pop-anim {
+      display: inline-block;
+      animation: speechTextPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Bottom Left HUD */
+    #bottom-left-hud {
+      position: fixed;
+      left: 28px;
+      bottom: 24px;
+      z-index: 9;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 390px;
+      pointer-events: none;
+    }
+
+    #inside-experiment {
+      pointer-events: auto;
+      width: 100%;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--hairline);
+      border-radius: 16px;
+      box-shadow: var(--glass-highlight), 0 14px 32px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transition: all 0.24s ease;
+    }
+
+    #btn-toggle-inside {
+      appearance: none;
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--soft);
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 13.5px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    #btn-toggle-inside:hover {
+      color: var(--ink);
+    }
+
+    .inside-chevron {
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 11px;
+      color: var(--secondary);
+      transition: transform 0.2s ease;
+    }
+
+    #inside-experiment.is-open .inside-chevron,
+    #btn-toggle-inside[aria-expanded="true"] .inside-chevron {
+      transform: rotate(180deg);
+    }
+
+    .inside-body {
+      display: none;
+      padding: 0 14px 14px;
+      border-top: 1px dashed var(--hairline);
+      max-height: 250px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--soft);
+      scrollbar-width: thin;
+    }
+
+    #inside-experiment.is-open .inside-body,
+    #btn-toggle-inside[aria-expanded="true"] + .inside-body {
+      display: block;
+    }
+
+    .inside-body p {
+      margin-top: 9px;
+    }
+
+    .inside-body strong {
+      color: var(--secondary);
+      font-weight: 600;
+    }
+
+    .inside-counts {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--hairline);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .inside-counts span strong {
+      color: var(--ink);
+    }
+
+    #tool-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--soft);
+      background: rgba(18, 10, 24, 0.66);
+      border: 1px solid var(--hairline);
+      padding: 5px 11px;
+      border-radius: 8px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .readouts-row {
+      display: grid;
+      grid-template-columns: repeat(4, auto);
+      gap: 7px;
+      pointer-events: auto;
+    }
+
+    .readout-card {
+      background: rgba(20, 11, 28, 0.72);
+      border: 1px solid var(--hairline);
+      border-radius: 11px;
+      padding: 6px 10px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--glass-highlight);
+      min-width: 74px;
+    }
+
+    .readout-val {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    .readout-lbl {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Bottom Right Signature */
+    .bottom-signature {
+      position: fixed;
+      right: 28px;
+      bottom: 12px;
+      z-index: 8;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(169, 147, 159, 0.65);
+      pointer-events: none;
+    }
+
+    /* Loading Overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: radial-gradient(circle at 50% 50%, rgba(26, 15, 36, 0.92), rgba(12, 6, 18, 0.98));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    #loading-overlay.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loading-ember {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff2d6, #ff9a55 60%, #e05a2b 100%);
+      box-shadow: 0 0 18px #ff9a55, 0 0 36px rgba(240, 122, 69, 0.8);
+      animation: emberPulse 1.4s ease-in-out infinite;
+    }
+
+    .loading-text {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+
+    /* Fallback Card */
+    #fallback-card {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 25;
+      width: min(460px, 90vw);
+      background: var(--glass-bg-strong);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 194, 122, 0.28);
+      border-radius: 22px;
+      padding: 22px 24px;
+      box-shadow: var(--glass-highlight), var(--glass-shadow);
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #fallback-card.is-visible {
+      display: flex;
+    }
+
+    .fallback-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 20px;
+      color: var(--secondary);
+    }
+
+    .fallback-desc {
+      font-size: 13px;
+      line-height: 1.52;
+      color: var(--soft);
+    }
+
+    #fallback-reason {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.45;
+      color: #ffbfa0;
+      background: rgba(10, 4, 15, 0.65);
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 140px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .fallback-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Mobile Responsive (<= 900px) */
+    @media (max-width: 900px) {
+      .top-bar {
+        padding: 12px 16px;
+      }
+
+      .top-kicker {
+        font-size: 9.5px;
+        letter-spacing: 0.11em;
+      }
+
+      #masthead {
+        top: 44px;
+        left: 16px;
+        right: 16px;
+        max-width: none;
+      }
+
+      .masthead-title {
+        font-size: clamp(36px, 9vw, 52px);
+        margin-bottom: 6px;
+      }
+
+      .masthead-caption {
+        font-size: 12px;
+        max-width: 290px;
+        margin-bottom: 0;
+      }
+
+      .masthead-caption,
+      .masthead-motto,
+      .specimen-id,
+      #bottom-left-hud,
+      .bottom-signature,
+      .panel-note {
+        display: none !important;
+      }
+
+      #control-panel {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 43vh;
+        border-radius: 22px 22px 0 0;
+        padding: 14px 16px 18px;
+      }
+
+      .section-actions {
+        order: -1;
+      }
+
+      .actions-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .shortcut-badge {
+        display: none;
+      }
+
+      #speech-bubble {
+        bottom: calc(43vh + 12px);
+        padding: 8px 14px;
+      }
+
+      #speech-text {
+        font-size: 13px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="stage" aria-label="Interactive 3D Plush Black Cat on a Halloween Porch">
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="plush-canvas" tabindex="0" aria-label="Midnight the plush black cat interactive canvas"></canvas>
+    <div class="vignette-overlay" aria-hidden="true"></div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-kicker">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M12 2L14.6 8.5L21.5 9.2L16.3 13.8L17.8 20.6L12 17L6.2 20.6L7.7 13.8L2.5 9.2L9.4 8.5L12 2Z" />
+        </svg>
+        <span>MATERIAL STUDIES / NO. 013 · ALL HALLOWS' EVE</span>
+      </div>
+      <div class="status-pill" role="status" aria-live="off">
+        <span class="ember-dot" aria-hidden="true"></span>
+        <span id="fps-pill">WEBGPU · 60 FPS</span>
+      </div>
+    </header>
+
+    <!-- Left Masthead -->
+    <section id="masthead" aria-label="Specimen Introduction">
+      <h1 class="masthead-title">
+        <span class="line-1">Plush /</span>
+        <span class="line-2">Black Cat.</span>
+      </h1>
+      <p class="masthead-caption">
+        An interactive XPBD soft-body stuffed cat with twenty-four shell layers of combed Kajiya-Kay velvet fur, resting on a lantern-lit Halloween porch.
+      </p>
+      <blockquote class="masthead-motto">
+        “Good luck in twenty-four centimetres of soft felt, warm amber glass, and a tiny brass bell.”
+      </blockquote>
+      <div class="specimen-id">
+        FELIS CATUS NOCTURNA / SOFT GOODS — Sitting specimen, 24 cm · one bell
+      </div>
+    </section>
+
+    <!-- Right Control Panel -->
+    <aside id="control-panel" aria-label="Specimen Controls">
+      <div class="panel-header">
+        <h2 class="panel-title">The specimen — fig. 013</h2>
+        <span class="panel-subtitle">XPBD + WGSL</span>
+      </div>
+
+      <!-- TOUCH Tools -->
+      <div class="panel-section section-touch">
+        <div class="section-label-row">
+          <span class="section-label">TOUCH</span>
+        </div>
+        <div class="segmented-control" role="group" aria-label="Interaction Tool">
+          <button type="button" class="tool-btn is-active" data-tool="hand" aria-pressed="true" title="Hand tool (H) — Grab & lift">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+              <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6" />
+              <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.3 16.4a2 2 0 0 1 2.8-2.8L8 15.5" />
+            </svg>
+            <span>Hand</span>
+          </button>
+          <button type="button" class="tool-btn" data-tool="finger" aria-pressed="false" title="Finger tool (F) — Poke & boop">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3a2 2 0 0 1 2 2v8.5" />
+              <path d="M14 10.5a2 2 0 1 1 4 0V14" />
+              <path d="M18 12a2 2 0 1 1 4 0v3a7 7 0 0 1-7 7h-2.5a6.5 6.5 0 0 1-5.2-2.6L4.6 15.8a1.8 1.8 0 0 1 2.5-2.5L10 16V5a2 2 0 0 1 2-2Z" />
+            </svg>
+            <span>Finger</span>
+          </button>
+          <button type="button" class="tool-btn" data-tool="comb" aria-pressed="false" title="Comb tool (C) — Brush velvet pile">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16a2 2 0 0 1 2 2v2H2V8a2 2 0 0 1 2-2Z" />
+              <path d="M5 10v8M9 10v8M13 10v8M17 10v8M21 10v8" />
+            </svg>
+            <span>Comb</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- COAT Swatches -->
+      <div class="panel-section section-coat">
+        <div class="section-label-row">
+          <span class="section-label">COAT</span>
+        </div>
+        <div class="coat-row" role="group" aria-label="Fur Coat Variant">
+          <button type="button" class="coat-btn is-active" data-coat="midnight" aria-pressed="true">
+            <span class="coat-orb coat-orb--midnight" aria-hidden="true"></span>
+            <span>Midnight</span>
+          </button>
+          <button type="button" class="coat-btn" data-coat="smoke" aria-pressed="false">
+            <span class="coat-orb coat-orb--smoke" aria-hidden="true"></span>
+            <span>Smoke</span>
+          </button>
+          <button type="button" class="coat-btn" data-coat="tuxedo" aria-pressed="false">
+            <span class="coat-orb coat-orb--tuxedo" aria-hidden="true"></span>
+            <span>Tuxedo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders -->
+      <div class="panel-section section-sliders">
+        <div class="sliders-group">
+          <div class="slider-item">
+            <div class="slider-header">
+              <label class="slider-name" for="slider-stuffing">Stuffing</label>
+              <span class="slider-poles">squishy · plump</span>
+            </div>
+            <input type="range" id="slider-stuffing" class="plush-slider" min="0" max="100" value="55" style="--val: 55%;" />
+          </div>
+          <div class="slider-item">
+            <div class="slider-header">
+              <label class="slider-name" for="slider-pile">Pile</label>
+              <span class="slider-poles">velvet · fluffy</span>
+            </div>
+            <input type="range" id="slider-pile" class="plush-slider" min="0" max="100" value="62" style="--val: 62%;" />
+          </div>
+          <div class="slider-item">
+            <div class="slider-header">
+              <label class="slider-name" for="slider-mood">Mood</label>
+              <span class="slider-poles">sleepy · zoomies</span>
+            </div>
+            <input type="range" id="slider-mood" class="plush-slider" min="0" max="100" value="50" style="--val: 50%;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="panel-section section-actions">
+        <div class="section-label-row">
+          <span class="section-label">ACTIONS</span>
+        </div>
+        <div class="actions-grid" role="group" aria-label="Cat Actions">
+          <button type="button" class="action-btn" data-action="prowl" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 17c3-4 6-4 9 0s6 4 9 0" />
+                <circle cx="7" cy="10" r="1.5" />
+                <circle cx="17" cy="10" r="1.5" />
+              </svg>
+              <span class="action-label">Prowl</span>
+            </span>
+            <span class="shortcut-badge">1</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="pounce" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 18C7 9 14 7 20 12" />
+                <path d="M16 7l4 5-5 3" />
+              </svg>
+              <span class="action-label">Pounce</span>
+            </span>
+            <span class="shortcut-badge">2</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="arch" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19C6 6 18 6 20 19" />
+                <path d="M12 4v3M8 6l1.5 2M16 6l-1.5 2" />
+              </svg>
+              <span class="action-label">Arch &amp; hiss</span>
+            </span>
+            <span class="shortcut-badge">3</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="purr" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20Z" />
+              </svg>
+              <span class="action-label">Purr</span>
+            </span>
+            <span class="shortcut-badge">4</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="groom" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="14" r="4" />
+                <circle cx="7.5" cy="9.5" r="1.5" />
+                <circle cx="12" cy="7.5" r="1.5" />
+                <circle cx="16.5" cy="9.5" r="1.5" />
+              </svg>
+              <span class="action-label">Groom</span>
+            </span>
+            <span class="shortcut-badge">5</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="chase" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <ellipse cx="11" cy="14" rx="5" ry="3.5" />
+                <circle cx="15" cy="11.5" r="1.5" />
+                <path d="M6 14c-2.5 0-4-1.5-3.5-3.5" />
+              </svg>
+              <span class="action-label">Chase</span>
+            </span>
+            <span class="shortcut-badge">6</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="nap" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.5A7.5 7.5 0 1 1 9.5 4a6 6 0 0 0 10.5 10.5Z" />
+              </svg>
+              <span class="action-label">Nap</span>
+            </span>
+            <span class="shortcut-badge">7</span>
+          </button>
+
+          <button type="button" class="action-btn" data-action="topple" aria-pressed="false">
+            <span class="action-btn-left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v6m0 0l-3-3m3 3l3-3" />
+                <rect x="5" y="14" width="14" height="5" rx="2.5" />
+              </svg>
+              <span class="action-label">Topple</span>
+            </span>
+            <span class="shortcut-badge">8</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Utility & Checkboxes -->
+      <div class="utility-section">
+        <div class="utility-row">
+          <button type="button" id="btn-smooth-fur" class="util-btn">Smooth fur</button>
+          <button type="button" id="btn-reset" class="util-btn" title="Reset pose (R)">Reset</button>
+          <button type="button" id="btn-pause" class="util-btn" aria-pressed="false" title="Pause physics (Space)">Pause</button>
+        </div>
+        <div class="checkbox-row">
+          <label class="chk-label" for="chk-slowmo">
+            <input type="checkbox" id="chk-slowmo" class="chk-input" aria-checked="false" />
+            <span>¼ speed</span>
+          </label>
+          <label class="chk-label" for="chk-mesh">
+            <input type="checkbox" id="chk-mesh" class="chk-input" aria-checked="false" />
+            <span>Mesh</span>
+          </label>
+        </div>
+      </div>
+
+      <p class="panel-note">
+        Drag the cat, tug an ear or the bell, or tap the porch boards to call Midnight over.
+      </p>
+    </aside>
+
+    <!-- Speech Bubble -->
+    <div id="speech-bubble" role="status" aria-live="polite">
+      <span class="speech-dot" aria-hidden="true"></span>
+      <span id="speech-text">“Purr… the porch boards are warm tonight.”</span>
+    </div>
+
+    <!-- Bottom Left HUD -->
+    <section id="bottom-left-hud" aria-label="Simulation Telemetry and Notes">
+      <div id="inside-experiment">
+        <button type="button" id="btn-toggle-inside" aria-expanded="false" aria-controls="inside-experiment-body">
+          <span>Inside the experiment</span>
+          <span class="inside-chevron" aria-hidden="true">▲</span>
+        </button>
+        <div id="inside-experiment-body" class="inside-body">
+          <p>
+            <strong>1. SDF &amp; Surface Nets Skinning.</strong> Midnight’s plush silhouette is sampled from a smooth signed distance field of metaball lobes and extracted on the fly via Surface Nets into a watertight manifold bound by barycentric weights.
+          </p>
+          <p>
+            <strong>2. XPBD Co-Rotational Hexahedra &amp; Tetrahedra.</strong> An interior volumetric lattice solves polar-decomposed hexahedral shape matching alongside 5-tetrahedra-per-cell volume conservation at 6 substeps per frame so every squish rebounds plumply.
+          </p>
+          <p>
+            <strong>3. Cloth Felt Ears &amp; Rope Tail.</strong> Double-sided felt ears and a 16-node soft rope tail coupled to the spine deform independently with bending resistance, while a brass bell pendulum swings from the velvet collar.
+          </p>
+          <p>
+            <strong>4. Multi-Shell Kajiya-Kay Fur.</strong> Up to 30 concentric instanced shells extrude procedural tapered cones hashed in rest space, shaded with dual-lobe Kajiya-Kay fiber scattering, velvet rim sheen, comb memory, and 4x MSAA sample-mask coverage.
+          </p>
+          <p>
+            <strong>5. Premultiplied Shadow-Catcher Compositing.</strong> The native WebGPU canvas renders PCSS-lite contact shadows and Khronos PBR Neutral tone-mapped fur with premultiplied alpha directly over the synchronized Three.js Halloween porch.
+          </p>
+          <div class="inside-counts">
+            <span>Particles: <strong id="count-particles">0</strong></span>
+            <span>Hex cells: <strong id="count-cells">0</strong></span>
+            <span>Tetrahedra: <strong id="count-tets">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="tool-hint">Hand · Drag body to squish &amp; lift, or tug an ear, tail, or brass bell</div>
+
+      <div class="readouts-row">
+        <div class="readout-card">
+          <div id="readout-mass" class="readout-val">340 g</div>
+          <div class="readout-lbl">MASS</div>
+        </div>
+        <div class="readout-card">
+          <div id="readout-volume" class="readout-val">100.0%</div>
+          <div class="readout-lbl">VOLUME</div>
+        </div>
+        <div class="readout-card">
+          <div id="readout-purrs" class="readout-val">0</div>
+          <div class="readout-lbl">PURRS</div>
+        </div>
+        <div class="readout-card">
+          <div id="readout-pounces" class="readout-val">0</div>
+          <div class="readout-lbl">POUNCES</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Right Signature -->
+    <div class="bottom-signature" aria-hidden="true">
+      STUFFED WITH NUMBERS. MOSTLY WHISKERS.
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" role="status" aria-live="polite">
+      <div class="loading-ember" aria-hidden="true"></div>
+      <div class="loading-text">Fluffing a very small cat…</div>
+    </div>
+
+    <!-- WebGPU Fallback Card -->
+    <div id="fallback-card" role="alertdialog" aria-labelledby="fallback-heading" aria-describedby="fallback-desc">
+      <h2 id="fallback-heading" class="fallback-title">WebGPU Fur Renderer Unavailable</h2>
+      <p id="fallback-desc" class="fallback-desc">
+        Midnight’s multi-shell XPBD soft-body fur renderer requires WebGPU. Meanwhile, the Witch’s Front Porch continues auto-orbiting in Three.js below.
+      </p>
+      <pre id="fallback-reason">Checking WebGPU adapter and WGSL shader compilation…</pre>
+      <div class="fallback-actions">
+        <button type="button" id="btn-dismiss-fallback" class="util-btn" onclick="document.getElementById('fallback-card').classList.remove('is-visible')">Dismiss</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+  /* __MIDNIGHT_JS_BUNDLE__ */
+  </script>
+</body>
+</html>
